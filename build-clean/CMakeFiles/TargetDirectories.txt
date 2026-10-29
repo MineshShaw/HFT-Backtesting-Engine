@@ -1,5 +1,0 @@
-/home/mineshshaw/Work/HFT-Backtesting-Engine/build-clean/CMakeFiles/main_app.dir
-/home/mineshshaw/Work/HFT-Backtesting-Engine/build-clean/CMakeFiles/smoke_test.dir
-/home/mineshshaw/Work/HFT-Backtesting-Engine/build-clean/CMakeFiles/test.dir
-/home/mineshshaw/Work/HFT-Backtesting-Engine/build-clean/CMakeFiles/edit_cache.dir
-/home/mineshshaw/Work/HFT-Backtesting-Engine/build-clean/CMakeFiles/rebuild_cache.dir
