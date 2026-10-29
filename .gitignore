@@ -1,0 +1,7 @@
+/build/
+/cmake-build-*/
+/CMakeUserPresets.json
+*.o
+*.a
+*.so
+*.out
