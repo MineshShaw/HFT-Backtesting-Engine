@@ -25,6 +25,7 @@ endif()
 add_library(hft_core 
     src/data/mapped_file.cpp 
     src/data/csv_parser.cpp
+    src/data/numeric_converter.cpp
 )
 # Using PUBLIC means anything that links hft_core automatically gets this include directory
 target_include_directories(hft_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -45,6 +46,7 @@ find_package(GTest REQUIRED)
 add_executable(smoke_test tests/smoke_test.cpp)
 add_executable(mapped_file_test tests/mapped_file_test.cpp)
 add_executable(csv_parser_test tests/csv_parser_test.cpp)
+add_executable(numeric_converter_test tests/numeric_converter_test.cpp)
 
 target_link_libraries(smoke_test PRIVATE project_warnings)
 
@@ -64,6 +66,15 @@ target_link_libraries(csv_parser_test
     project_warnings
 )
 
+target_link_libraries(numeric_converter_test
+    PRIVATE
+    hft_core             # Links your NumericConverter implementation
+    GTest::gtest         # Links Google Test core
+    GTest::gtest_main    # Provides the main() function for the test
+    project_warnings
+)
+
 add_test(NAME SmokeTest COMMAND smoke_test)
 add_test(NAME MappedFileTest COMMAND mapped_file_test)
 add_test(NAME CsvParserTest COMMAND csv_parser_test)
+add_test(NAME NumericConverterTest COMMAND numeric_converter_test)
