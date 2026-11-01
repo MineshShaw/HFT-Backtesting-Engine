@@ -24,8 +24,8 @@ MappedFile::MappedFile(const std::string& file_path)
     }
     mMappedSize = sb.st_size;
 
-    if (mMappedSize == 0) {
-        // If the file size is zero, we do not call mmap().
+    if (mMappedSize <= 0) {
+        // If the file size is less than or equal to zero, we do not call mmap().
         // We keep the file descriptor open, set the data pointer to nullptr,
         // and return from the constructor.
         mMappedData = nullptr;
