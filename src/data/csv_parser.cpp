@@ -5,9 +5,21 @@ namespace hft::data {
 
 CsvParser::CsvParser(std::string_view input) : mInput(input), mPosition(0) {}
 
-bool CsvParser::next(TickView& tick)
+constexpr std::string_view trim(std::string_view input) noexcept {
+    const auto start = input.find_first_not_of(" \t\n\r\f\v");
+    
+    if (start == std::string_view::npos) {
+        return {};
+    }
+    
+    const auto end = input.find_last_not_of(" \t\n\r\f\v");
+    
+    return input.substr(start, end - start + 1);
+}
+
+CsvParseResult CsvParser::next(TickView& tick)
 {
-    while (mPosition < mInput.size()) {
+    if (mPosition < mInput.size()) {
         auto newlinePos = mInput.find('\n', mPosition);
 
         bool hasNewline = (newlinePos != std::string_view::npos);
@@ -30,9 +42,11 @@ bool CsvParser::next(TickView& tick)
             mPosition = mInput.size();
 
         if (!currentLine.empty() && parse_line(currentLine, tick))
-            return true;
+            return CsvParseResult::ValidRecord;
+
+        return CsvParseResult::InvalidRecord;
     }
-    return false;
+    return CsvParseResult::EndOfInput;
 }
 
 
@@ -64,6 +78,11 @@ bool CsvParser::parse_line(std::string_view line, TickView& tick)
         return false;
 
     tempTick.size = line.substr(thirdComma + 1);
+
+    tempTick.timestamp = trim(tempTick.timestamp);
+    tempTick.symbol = trim(tempTick.symbol);
+    tempTick.price = trim(tempTick.price);
+    tempTick.size = trim(tempTick.size);
 
     if (tempTick.timestamp.size() > 0 &&
         tempTick.symbol.size() > 0 &&

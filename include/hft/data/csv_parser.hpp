@@ -6,6 +6,12 @@
 
 namespace hft::data {
 
+enum class CsvParseResult {
+    ValidRecord,
+    InvalidRecord,
+    EndOfInput
+};
+
 struct TickView {
     std::string_view timestamp;
     std::string_view symbol;
@@ -19,7 +25,7 @@ public:
     
     explicit CsvParser(std::string_view input);
 
-    bool next(TickView& tick);
+    CsvParseResult next(TickView& tick);
 
 private:
     std::string_view mInput;

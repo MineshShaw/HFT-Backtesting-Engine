@@ -13,9 +13,9 @@ TEST(CsvParserTest, ParsesValidRow)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    const auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097600");
     EXPECT_EQ(tick.symbol, "BTC");
@@ -29,9 +29,9 @@ TEST(CsvParserTest, HandlesEmptyInput)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    const auto result = parser.next(tick);
 
-    EXPECT_FALSE(result);
+    EXPECT_EQ(CsvParseResult::EndOfInput, result);
 }
 
 TEST(CsvParserTest, HandlesInvalidRow)
@@ -43,9 +43,11 @@ TEST(CsvParserTest, HandlesInvalidRow)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::InvalidRecord, result);
+
+    result = parser.next(tick);
 
     EXPECT_EQ(tick.timestamp, "1625097601");
     EXPECT_EQ(tick.symbol, "ETH");
@@ -63,9 +65,9 @@ TEST(CsvParserTest, HandlesEmptyRow)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097600");
     EXPECT_EQ(tick.symbol, "BTC");
@@ -74,7 +76,11 @@ TEST(CsvParserTest, HandlesEmptyRow)
 
     result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::InvalidRecord, result);
+
+    result = parser.next(tick);
+
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097601");
     EXPECT_EQ(tick.symbol, "ETH");
@@ -91,9 +97,9 @@ TEST(CsvParserTest, HandlesFinalLineWithoutNewline)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097600");
     EXPECT_EQ(tick.symbol, "BTC");
@@ -102,7 +108,7 @@ TEST(CsvParserTest, HandlesFinalLineWithoutNewline)
 
     result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097601");
     EXPECT_EQ(tick.symbol, "ETH");
@@ -110,7 +116,7 @@ TEST(CsvParserTest, HandlesFinalLineWithoutNewline)
     EXPECT_EQ(tick.size, "0.8");
 
     result = parser.next(tick);
-    EXPECT_FALSE(result); // No more rows
+    EXPECT_EQ(CsvParseResult::EndOfInput, result); // No more rows
 }
 
 TEST(CsvParserTest, HandlesCRLFLineEndings)
@@ -122,9 +128,9 @@ TEST(CsvParserTest, HandlesCRLFLineEndings)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097600");
     EXPECT_EQ(tick.symbol, "BTC");
@@ -133,7 +139,7 @@ TEST(CsvParserTest, HandlesCRLFLineEndings)
 
     result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097601");
     EXPECT_EQ(tick.symbol, "ETH");
@@ -141,7 +147,7 @@ TEST(CsvParserTest, HandlesCRLFLineEndings)
     EXPECT_EQ(tick.size, "0.8");
 
     result = parser.next(tick);
-    EXPECT_FALSE(result); // No more rows
+    EXPECT_EQ(CsvParseResult::EndOfInput, result); // No more rows
 }
 
 TEST(CsvParserTest, HandlesExtraColumns)
@@ -153,9 +159,13 @@ TEST(CsvParserTest, HandlesExtraColumns)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::InvalidRecord, result);
+
+    result = parser.next(tick);
+
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097601");
     EXPECT_EQ(tick.symbol, "ETH");
@@ -163,7 +173,7 @@ TEST(CsvParserTest, HandlesExtraColumns)
     EXPECT_EQ(tick.size, "0.8");
 
     result = parser.next(tick);
-    EXPECT_FALSE(result); // No more rows
+    EXPECT_EQ(CsvParseResult::EndOfInput, result); // No more rows
 }
 
 TEST(CsvParserTest, HandlesEmptyRequiredFields)
@@ -176,9 +186,17 @@ TEST(CsvParserTest, HandlesEmptyRequiredFields)
     CsvParser parser(input);
     TickView tick;
 
-    bool result = parser.next(tick);
+    auto result = parser.next(tick);
 
-    EXPECT_TRUE(result);
+    EXPECT_EQ(CsvParseResult::InvalidRecord, result);
+
+    result = parser.next(tick);
+
+    EXPECT_EQ(CsvParseResult::InvalidRecord, result);
+
+    result = parser.next(tick);
+
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
 
     EXPECT_EQ(tick.timestamp, "1625097602");
     EXPECT_EQ(tick.symbol, "BTC");
@@ -190,7 +208,7 @@ TEST(CsvParserTest, HandlesDefaultParser) {
     CsvParser parser;
     TickView tick;
 
-    bool result = parser.next(tick);
+    const auto result = parser.next(tick);
 
-    EXPECT_FALSE(result); // No input provided, should return false
+    EXPECT_EQ(CsvParseResult::EndOfInput, result); // No input provided, should return false
 }
