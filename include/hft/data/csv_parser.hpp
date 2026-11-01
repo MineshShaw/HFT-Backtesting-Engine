@@ -15,6 +15,8 @@ struct TickView {
 
 class CsvParser {
 public:
+    CsvParser() : mInput{}, mPosition(0) {}
+    
     explicit CsvParser(std::string_view input);
 
     bool next(TickView& tick);

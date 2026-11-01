@@ -185,3 +185,12 @@ TEST(CsvParserTest, HandlesEmptyRequiredFields)
     EXPECT_EQ(tick.price, "35000.5");
     EXPECT_EQ(tick.size, "1.0");
 }
+
+TEST(CsvParserTest, HandlesDefaultParser) {
+    CsvParser parser;
+    TickView tick;
+
+    bool result = parser.next(tick);
+
+    EXPECT_FALSE(result); // No input provided, should return false
+}
