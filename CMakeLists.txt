@@ -27,6 +27,7 @@ add_library(hft_core
     src/data/csv_parser.cpp
     src/data/numeric_converter.cpp
     src/data/tick_converter.cpp
+    src/data/dataset_reader.cpp
 )
 # Using PUBLIC means anything that links hft_core automatically gets this include directory
 target_include_directories(hft_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -49,6 +50,7 @@ add_executable(mapped_file_test tests/mapped_file_test.cpp)
 add_executable(csv_parser_test tests/csv_parser_test.cpp)
 add_executable(numeric_converter_test tests/numeric_converter_test.cpp)
 add_executable(tick_converter_test tests/tick_converter_test.cpp)
+add_executable(dataset_reader_test tests/dataset_reader_test.cpp)
 
 target_link_libraries(smoke_test PRIVATE project_warnings)
 
@@ -84,8 +86,22 @@ target_link_libraries(tick_converter_test
     project_warnings
 )
 
+target_link_libraries(dataset_reader_test
+    PRIVATE
+    hft_core
+    GTest::gtest
+    GTest::gtest_main
+    project_warnings
+)
+
+target_compile_definitions(dataset_reader_test
+    PRIVATE
+    TEST_FIXTURE_DIR="${CMAKE_SOURCE_DIR}/tests/fixtures"
+)
+
 add_test(NAME SmokeTest COMMAND smoke_test)
 add_test(NAME MappedFileTest COMMAND mapped_file_test)
 add_test(NAME CsvParserTest COMMAND csv_parser_test)
 add_test(NAME NumericConverterTest COMMAND numeric_converter_test)
 add_test(NAME TickConverterTest COMMAND tick_converter_test)
+add_test(NAME DatasetReaderTest COMMAND dataset_reader_test)
