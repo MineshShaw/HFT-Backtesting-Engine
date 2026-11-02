@@ -94,6 +94,8 @@ target_link_libraries(dataset_reader_test
     project_warnings
 )
 
+set_source_files_properties(tests/dataset_reader_test.cpp PROPERTIES COMPILE_FLAGS "-Wno-self-move")
+
 target_compile_definitions(dataset_reader_test
     PRIVATE
     TEST_FIXTURE_DIR="${CMAKE_SOURCE_DIR}/tests/fixtures"

@@ -49,6 +49,8 @@ TEST(CsvParserTest, HandlesInvalidRow)
 
     result = parser.next(tick);
 
+    EXPECT_EQ(CsvParseResult::ValidRecord, result);
+
     EXPECT_EQ(tick.timestamp, "1625097601");
     EXPECT_EQ(tick.symbol, "ETH");
     EXPECT_EQ(tick.price, "2200.5");
