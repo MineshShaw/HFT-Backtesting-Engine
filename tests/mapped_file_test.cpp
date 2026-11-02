@@ -58,6 +58,7 @@ TEST_F(MappedFileTest, OpensEmptyFile) {
 
     ASSERT_TRUE(file.is_valid());
     EXPECT_EQ(file.size(), 0);
+    EXPECT_EQ(file.data(), nullptr);
 }
 
 TEST_F(MappedFileTest, RejectsMissingFile) {
