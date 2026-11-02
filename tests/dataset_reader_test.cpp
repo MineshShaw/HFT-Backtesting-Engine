@@ -28,7 +28,7 @@ TEST(DatasetReaderTest, ValidDataset)
     EXPECT_EQ(reader.stats().tick_conversion_rejected, 0);
 
     EXPECT_EQ(reader.stats().lines_read, reader.stats().csv_records_accepted + reader.stats().csv_records_rejected);
-    EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted - reader.stats().tick_conversion_rejected);
+    EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted + reader.stats().tick_conversion_rejected);
 }
 
 TEST(DatasetReaderTest, MixedValidAndInvalidRows)
@@ -52,7 +52,7 @@ TEST(DatasetReaderTest, MixedValidAndInvalidRows)
     EXPECT_EQ(reader.stats().tick_conversion_rejected, 0);
 
     EXPECT_EQ(reader.stats().lines_read, reader.stats().csv_records_accepted + reader.stats().csv_records_rejected);
-    EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted - reader.stats().tick_conversion_rejected);
+    EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted + reader.stats().tick_conversion_rejected);
 }
 
 TEST(DatasetReaderTest, EmptyDataset)
@@ -76,7 +76,7 @@ TEST(DatasetReaderTest, EmptyDataset)
     EXPECT_EQ(reader.stats().tick_conversion_rejected, 0);
 
     EXPECT_EQ(reader.stats().lines_read, reader.stats().csv_records_accepted + reader.stats().csv_records_rejected);
-    EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted - reader.stats().tick_conversion_rejected);
+    EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted + reader.stats().tick_conversion_rejected);
 }
 
 TEST(DatasetReaderTest, MissingDataset)
