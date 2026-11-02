@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <limits>
+#include <cstdint>
 
 namespace hft::data
 {
@@ -24,15 +25,25 @@ MappedFile::MappedFile(const std::string& file_path)
         return;
     }
     
-    if (sb.st_size <= 0 && static_cast<std::size_t>(sb.st_size) <= std::numeric_limits<std::size_t>::max()) {
-        // If the file size is less than or equal to zero, we do not call mmap().
-        // We keep the file descriptor open, set the data pointer to nullptr,
-        // and return from the constructor.
-        mMappedData = nullptr;
+    if (sb.st_size < 0) {
+        close(mFileDescriptor);
+        mFileDescriptor = -1;
         return;
     }
 
-    mMappedSize = sb.st_size;
+    if (static_cast<std::uintmax_t>(sb.st_size) >
+        std::numeric_limits<std::size_t>::max()) {
+        close(mFileDescriptor);
+        mFileDescriptor = -1;
+        return;
+    }
+
+    mMappedSize = static_cast<std::size_t>(sb.st_size);
+
+    if (mMappedSize == 0) {
+        mMappedData = nullptr;
+        return;
+    }
 
     // Map the file into memory
     mMappedData = mmap(nullptr, mMappedSize, PROT_READ, MAP_PRIVATE, mFileDescriptor, 0);
