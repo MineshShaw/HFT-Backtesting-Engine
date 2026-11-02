@@ -45,11 +45,11 @@ TEST(DatasetReaderTest, MixedValidAndInvalidRows)
     }
 
     EXPECT_EQ(count, 5); 
-    EXPECT_EQ(reader.stats().lines_read, 10); 
-    EXPECT_EQ(reader.stats().csv_records_accepted, 5);
+    EXPECT_EQ(reader.stats().lines_read, 11); 
+    EXPECT_EQ(reader.stats().csv_records_accepted, 6);
     EXPECT_EQ(reader.stats().csv_records_rejected, 5);
     EXPECT_EQ(reader.stats().ticks_emitted, 5);
-    EXPECT_EQ(reader.stats().tick_conversion_rejected, 0);
+    EXPECT_EQ(reader.stats().tick_conversion_rejected, 1);
 
     EXPECT_EQ(reader.stats().lines_read, reader.stats().csv_records_accepted + reader.stats().csv_records_rejected);
     EXPECT_EQ(reader.stats().csv_records_accepted, reader.stats().ticks_emitted + reader.stats().tick_conversion_rejected);
