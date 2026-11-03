@@ -124,42 +124,35 @@ TEST(DatasetReaderTest, MoveConstructionTransfersReaderState)
     // Source must be safe to destroy.
 }
 
-// TEST(DatasetReaderTest, MoveAssignmentReleasesOldDestinationMapping)
-// {
-//     auto source_file_path = fixture_dir / "valid_dataset.csv";
-//     auto destination_file_path = fixture_dir / "mixed_dataset.csv";
+TEST(DatasetReaderTest, MoveAssignmentReleasesOldDestinationMapping)
+{
+    auto source_file_path = fixture_dir / "valid_dataset.csv";
+    auto destination_file_path = fixture_dir / "mixed_dataset.csv";
 
-//     DatasetReader source{source_file_path};
-//     DatasetReader destination{destination_file_path};
+    DatasetReader source{source_file_path};
+    DatasetReader destination{destination_file_path};
 
-//     ASSERT_TRUE(source.is_valid());
-//     ASSERT_TRUE(destination.is_valid());
+    ASSERT_TRUE(source.is_valid());
+    ASSERT_TRUE(destination.is_valid());
 
-//     Tick sourceTick;
-//     Tick destinationTick;
+    Tick sourceTick;
+    Tick destinationTick;
 
-//     source.next(sourceTick); // Advance source to simulate reading.
-//     destination.next(destinationTick); // Advance destination to simulate reading.
-
-//     Tick initialSourceTick = sourceTick;
-
-//     destination = std::move(source);
-
-//     EXPECT_TRUE(destination.is_valid());
-//     EXPECT_EQ(initialSourceTick.timestamp, destinationTick.timestamp); // The destination should now have the state of the source.
-//     EXPECT_EQ(initialSourceTick.symbol, destinationTick.symbol);
-//     EXPECT_EQ(initialSourceTick.price, destinationTick.price);
-//     EXPECT_EQ(initialSourceTick.size, destinationTick.size);
+    ASSERT_TRUE(source.next(sourceTick)); // Advance source to simulate reading.
+    ASSERT_TRUE(destination.next(destinationTick)); // Advance destination to simulate reading.
     
-//     EXPECT_FALSE(source.is_valid());
+    destination = std::move(source);
 
-//     while (destination.next(destinationTick)) {}
+    EXPECT_TRUE(destination.is_valid());    
+    EXPECT_FALSE(source.is_valid());
 
-//     EXPECT_EQ(destinationTick.timestamp, 1); // Last valid record from the source dataset.
-//     EXPECT_EQ(destinationTick.symbol, "TEST");
-//     EXPECT_EQ(destinationTick.price, 1.0);
-//     EXPECT_EQ(destinationTick.size, 1);
-// }
+    while (destination.next(destinationTick)) {}
+
+    EXPECT_EQ(destinationTick.timestamp, 1); // Last valid record from the source dataset.
+    EXPECT_EQ(destinationTick.symbol, "TEST");
+    EXPECT_EQ(destinationTick.price, 1.0);
+    EXPECT_EQ(destinationTick.size, 1);
+}
 
 TEST(DatasetReaderTest, SelfMoveAssignmentIsSafe)
 {
