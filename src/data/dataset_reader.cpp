@@ -55,21 +55,25 @@ bool DatasetReader::next(Tick& output)
 
 DatasetReader::DatasetReader(DatasetReader&& other) noexcept
     : mMappedFile(std::move(other.mMappedFile)),
-      mStats(std::move(other.mStats))
+      mParser(std::move(other.mParser)),
+      mStats(other.mStats)
 {
-    mParser = std::move(other.mParser);
     other.mParser = CsvParser{};
+    other.mStats = {};
 }
 
 DatasetReader& DatasetReader::operator=(DatasetReader&& other) noexcept
 {
     if (this != &other) {
+        mParser = CsvParser{};
         mMappedFile = std::move(other.mMappedFile);
         mParser = std::move(other.mParser);
-        mStats = std::move(other.mStats);
+        mStats = other.mStats;
 
         other.mParser = CsvParser{};
+        other.mStats = {};
     }
+
     return *this;
 }
 

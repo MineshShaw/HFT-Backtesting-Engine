@@ -146,6 +146,10 @@ TEST(DatasetReaderTest, MoveAssignmentReleasesOldDestinationMapping)
     EXPECT_TRUE(destination.is_valid());    
     EXPECT_FALSE(source.is_valid());
 
+    EXPECT_EQ(destination.stats().lines_read, 1); // Source had read one line before the move.
+
+    EXPECT_EQ(source.stats().lines_read, 0); // Moved-from source should have zeroed statistics.
+
     while (destination.next(destinationTick)) {}
 
     EXPECT_EQ(destinationTick.timestamp, 1); // Last valid record from the source dataset.
@@ -186,10 +190,34 @@ TEST(DatasetReaderTest, MoveAssignmentIntoEmptyDestination)
     EXPECT_FALSE(source.is_valid()); // Source should no longer be valid after move.
 
     Tick tick;
-    destination.next(tick); // Should be able to read from the moved destination.
+    ASSERT_TRUE(destination.next(tick)); // Should be able to read from the moved destination.
+
+    EXPECT_EQ(source.stats().lines_read, 0);
+    EXPECT_EQ(source.stats().ticks_emitted, 0);
 
     EXPECT_EQ(tick.timestamp, 1609459200);
     EXPECT_EQ(tick.symbol, "AAPL");
     EXPECT_EQ(tick.price, 130.0);
     EXPECT_EQ(tick.size, 100);
+}
+
+TEST(DatasetReaderTest, DestinationRemainsValidAfterSourceDestruction)
+{
+    std::unique_ptr<DatasetReader> destination;
+
+    {
+        DatasetReader source{fixture_dir / "valid_dataset.csv"};
+        ASSERT_TRUE(source.is_valid());
+
+        Tick tick;
+        ASSERT_TRUE(source.next(tick));
+
+        destination = std::make_unique<DatasetReader>(std::move(source));
+    }
+
+    ASSERT_TRUE(destination->is_valid());
+
+    Tick tick;
+    EXPECT_TRUE(destination->next(tick));
+    EXPECT_EQ(tick.symbol, "AAPL");
 }
