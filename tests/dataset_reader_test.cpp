@@ -2,6 +2,7 @@
 
 #include "gtest/gtest.h"
 #include <filesystem>
+#include <memory>
 
 using namespace hft::data;
 
@@ -93,14 +94,20 @@ TEST(DatasetReaderTest, MoveConstructionTransfersReaderState)
     ASSERT_TRUE(source.is_valid());
 
     Tick tick;
-    EXPECT_TRUE(source.next(tick)); // Advance to the next record to simulate reading.
+    ASSERT_TRUE(source.next(tick)); // Advance to the next record to simulate reading.
 
     const int64_t initial_lines_read = source.stats().lines_read;
 
     DatasetReader destination{std::move(source)};
 
-    EXPECT_TRUE(destination.is_valid());
+    ASSERT_TRUE(destination.is_valid());
     EXPECT_EQ(destination.stats().lines_read, initial_lines_read); // State should be transferred.
+
+    EXPECT_EQ(source.stats().lines_read, 0);
+    EXPECT_EQ(source.stats().csv_records_accepted, 0);
+    EXPECT_EQ(source.stats().csv_records_rejected, 0);
+    EXPECT_EQ(source.stats().ticks_emitted, 0);
+    EXPECT_EQ(source.stats().tick_conversion_rejected, 0);
     
     std::size_t count = 0;
     while (destination.next(tick)) {
@@ -218,6 +225,6 @@ TEST(DatasetReaderTest, DestinationRemainsValidAfterSourceDestruction)
     ASSERT_TRUE(destination->is_valid());
 
     Tick tick;
-    EXPECT_TRUE(destination->next(tick));
+    ASSERT_TRUE(destination->next(tick));
     EXPECT_EQ(tick.symbol, "AAPL");
 }
