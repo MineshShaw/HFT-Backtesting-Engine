@@ -6,6 +6,10 @@
 
 using namespace hft::data;
 
+#ifndef TEST_FIXTURE_DIR
+#define TEST_FIXTURE_DIR "fallback/path/for/intellisense"
+#endif
+
 const std::filesystem::path fixture_dir(TEST_FIXTURE_DIR);
 
 TEST(DatasetReaderTest, ValidDataset)
