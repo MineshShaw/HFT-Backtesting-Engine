@@ -13,10 +13,10 @@ enum class CsvParseResult {
 };
 
 struct TickView {
-    std::string_view timestamp;
-    std::string_view symbol;
-    std::string_view price;
-    std::string_view size;
+    std::string_view mTimestamp;
+    std::string_view mSymbol;
+    std::string_view mPrice;
+    std::string_view mSize;
 };
 
 class CsvParser {

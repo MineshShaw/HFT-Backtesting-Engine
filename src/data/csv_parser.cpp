@@ -58,36 +58,36 @@ bool CsvParser::parse_line(std::string_view line, TickView& tick)
     if (firstComma == std::string_view::npos)
         return false;
 
-    tempTick.timestamp = line.substr(0, firstComma);
+    tempTick.mTimestamp = line.substr(0, firstComma);
 
     auto secondComma = line.find(',', firstComma + 1);
     
     if (secondComma == std::string_view::npos)
         return false;
 
-    tempTick.symbol = line.substr(firstComma + 1, secondComma - firstComma - 1);
+    tempTick.mSymbol = line.substr(firstComma + 1, secondComma - firstComma - 1);
 
     auto thirdComma = line.find(',', secondComma + 1);
 
     if (thirdComma == std::string_view::npos)
         return false;
 
-    tempTick.price = line.substr(secondComma + 1, thirdComma - secondComma - 1);
+    tempTick.mPrice = line.substr(secondComma + 1, thirdComma - secondComma - 1);
 
     if (line.find(',', thirdComma + 1) != std::string_view::npos)
         return false;
 
-    tempTick.size = line.substr(thirdComma + 1);
+    tempTick.mSize = line.substr(thirdComma + 1);
 
-    tempTick.timestamp = trim(tempTick.timestamp);
-    tempTick.symbol = trim(tempTick.symbol);
-    tempTick.price = trim(tempTick.price);
-    tempTick.size = trim(tempTick.size);
+    tempTick.mTimestamp = trim(tempTick.mTimestamp);
+    tempTick.mSymbol = trim(tempTick.mSymbol);
+    tempTick.mPrice = trim(tempTick.mPrice);
+    tempTick.mSize = trim(tempTick.mSize);
 
-    if (tempTick.timestamp.size() > 0 &&
-        tempTick.symbol.size() > 0 &&
-        tempTick.price.size() > 0 &&
-        tempTick.size.size() > 0) {
+    if (tempTick.mTimestamp.size() > 0 &&
+        tempTick.mSymbol.size() > 0 &&
+        tempTick.mPrice.size() > 0 &&
+        tempTick.mSize.size() > 0) {
                 tick = tempTick;
                 return true;
     }
