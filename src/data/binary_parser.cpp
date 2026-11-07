@@ -98,12 +98,16 @@ bool decodeBinaryHeader(
         return false;
     }
 
-    if (header.header_size != kBinaryFixedHeaderSize + header.symbol_table_size) {
-        if (header.symbol_table_size <
-            static_cast<std::uint64_t>(header.symbol_count) * 2) {
-            error = BinaryHeaderError::InvalidSymbolTableSize;
-            return false;
-        }
+    const std::uint64_t minimumSymbolTableSize =
+    static_cast<std::uint64_t>(header.symbol_count) * 2;
+
+    if (header.symbol_table_size < minimumSymbolTableSize) {
+        error = BinaryHeaderError::InvalidSymbolTableSize;
+        return false;
+    }
+
+    if (header.header_size !=
+        kBinaryFixedHeaderSize + header.symbol_table_size) {
         error = BinaryHeaderError::InvalidHeaderSize;
         return false;
     }

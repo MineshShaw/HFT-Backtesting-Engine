@@ -7,8 +7,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include <span>
 
 namespace hft::data {
+
+namespace {
 
 void writeU16LE(
     std::vector<std::byte>& buffer,
@@ -106,6 +109,8 @@ std::vector<std::byte> makeBinaryFileWithOneTick() {
     file[53] = std::byte{'Y'};
 
     return file;
+}
+
 }
 
 TEST(BinaryParserTest, DecodesValidEmptyFile) {
@@ -335,10 +340,16 @@ TEST(BinaryParserTest, LeavesOutputUnchangedOnFailure) {
 
     ASSERT_TRUE(decodeBinaryHeader(file, header, error));
 
+    EXPECT_EQ(header.version_major, 1);
+    EXPECT_EQ(header.version_minor, 0);
     EXPECT_EQ(header.header_size, 54);
+    EXPECT_EQ(header.record_size, 24);
+    EXPECT_EQ(header.flags, 0);
     EXPECT_EQ(header.record_count, 1);
     EXPECT_EQ(header.symbol_count, 1);
     EXPECT_EQ(header.symbol_table_size, 6);
+    EXPECT_EQ(header.price_scale, 10000);
+    EXPECT_EQ(header.reserved, 0);
 
     EXPECT_EQ(file.size(), 78);
 
@@ -347,10 +358,16 @@ TEST(BinaryParserTest, LeavesOutputUnchangedOnFailure) {
 
     EXPECT_FALSE(decodeBinaryHeader(file, header, error));
 
+    EXPECT_EQ(header.version_major, 1);
+    EXPECT_EQ(header.version_minor, 0);
     EXPECT_EQ(header.header_size, 54);
+    EXPECT_EQ(header.record_size, 24);
+    EXPECT_EQ(header.flags, 0);
     EXPECT_EQ(header.record_count, 1);
     EXPECT_EQ(header.symbol_count, 1);
     EXPECT_EQ(header.symbol_table_size, 6);
+    EXPECT_EQ(header.price_scale, 10000);
+    EXPECT_EQ(header.reserved, 0);
 
     EXPECT_EQ(file.size(), 77);
 }
