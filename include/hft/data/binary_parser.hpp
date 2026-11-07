@@ -7,7 +7,10 @@
 
 #include "hft/data/binary_format.hpp"
 
+// Uncomment to debug error messages in the binary parser.
+// #include <ostream>
 namespace hft::data {
+
 
 enum class BinaryHeaderError {
     None,                   // 0
@@ -22,6 +25,24 @@ enum class BinaryHeaderError {
     InvalidSymbolTableSize, // 9
     FileSizeMismatch        // 10
 };
+
+// Uncomment to debug error messages in the binary parser.
+// inline std::ostream& operator<<(std::ostream& os, BinaryHeaderError error) {
+//     switch (error) {
+//         case BinaryHeaderError::None:                   return os << "None";
+//         case BinaryHeaderError::InsufficientData:       return os << "InsufficientData";
+//         case BinaryHeaderError::InvalidMagic:           return os << "InvalidMagic";
+//         case BinaryHeaderError::UnsupportedVersion:     return os << "UnsupportedVersion";
+//         case BinaryHeaderError::InvalidHeaderSize:      return os << "InvalidHeaderSize";
+//         case BinaryHeaderError::InvalidRecordSize:      return os << "InvalidRecordSize";
+//         case BinaryHeaderError::UnsupportedFlags:       return os << "UnsupportedFlags";
+//         case BinaryHeaderError::InvalidPriceScale:      return os << "InvalidPriceScale";
+//         case BinaryHeaderError::InvalidReservedField:   return os << "InvalidReservedField";
+//         case BinaryHeaderError::InvalidSymbolTableSize: return os << "InvalidSymbolTableSize";
+//         case BinaryHeaderError::FileSizeMismatch:       return os << "FileSizeMismatch";
+//         default: return os << "Unknown Error (" << static_cast<int>(error) << ")";
+//     }
+// }
 
 [[nodiscard]]
 bool decodeBinaryHeader(
