@@ -8,17 +8,17 @@
 namespace hft::data {
 
 enum class BinaryHeaderError {
-    None,
-    InsufficientData,
-    InvalidMagic,
-    UnsupportedVersion,
-    InvalidHeaderSize,
-    InvalidRecordSize,
-    UnsupportedFlags,
-    InvalidPriceScale,
-    InvalidReservedField,
-    InvalidSymbolTableSize,
-    FileSizeMismatch
+    None,                   // 0
+    InsufficientData,       // 1
+    InvalidMagic,           // 2
+    UnsupportedVersion,     // 3
+    InvalidHeaderSize,      // 4
+    InvalidRecordSize,      // 5
+    UnsupportedFlags,       // 6
+    InvalidPriceScale,      // 7
+    InvalidReservedField,   // 8
+    InvalidSymbolTableSize, // 9
+    FileSizeMismatch        // 10
 };
 
 [[nodiscard]]
