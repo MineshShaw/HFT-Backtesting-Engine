@@ -8,10 +8,19 @@
 #include <cstdint>
 #include <vector>
 #include <span>
+#include <string>
 
 namespace hft::data {
 
 namespace {
+
+std::vector<std::string> companyCodes = {
+        "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "BRK.B", "V", "JPM",
+        "JNJ",  "WMT",  "UNH",   "MA",   "PG",   "HD",   "CVX",  "LLY",   "ABBV", "BAC",
+        "PEP",  "KO",   "MRK",   "COST", "TMO",  "AVGO", "MCD",  "CRM",   "CSCO", "ABT",
+        "DHR",  "ACN",  "LIN",   "PFE",  "DIS",  "TXN",  "NKE",  "PM",    "NEE",  "VZ",
+        "ADBE", "CMCSA","AMD",   "QCOM", "INTC", "WFC",  "HON",  "COP",   "UPS",  "BA"
+    };
 
 void writeU16LE(
     std::vector<std::byte>& buffer,
@@ -111,6 +120,49 @@ std::vector<std::byte> makeBinaryFileWithOneTick() {
     return file;
 }
 
+std::vector<std::byte> makeBinaryFileWithFiftyTicks() {
+    constexpr std::size_t symbolTableSize = 260;
+
+    std::vector<std::byte> file(
+        48 + symbolTableSize + 24 * 2
+    );
+
+    for (std::size_t i = 0; i < kBinaryMagic.size(); ++i) {
+        file[i] = static_cast<std::byte>(kBinaryMagic[i]);
+    }
+
+    writeU16LE(file, 8, 1);
+    writeU16LE(file, 10, 0);
+
+    writeU32LE(file, 12, 48 + symbolTableSize);
+    writeU32LE(file, 16, 24);
+    writeU32LE(file, 20, 0);
+
+    writeU64LE(file, 24, 2);
+
+    writeU32LE(file, 32, 50);
+    writeU32LE(file, 36, symbolTableSize);
+
+    writeU32LE(file, 40, 10000);
+    writeU32LE(file, 44, 0);
+
+    std::size_t offset = 48;
+
+    for (std::size_t i = 0; i < companyCodes.size(); ++i) {
+        const std::string& code = companyCodes[i];
+
+        writeU16LE(file, offset, static_cast<std::uint16_t>(code.size()));
+        offset += 2;
+
+        for (std::size_t j = 0; j < code.size(); ++j) {
+            file[offset++] = static_cast<std::byte>(code[j]);
+        }
+    }
+
+    return file;
+
+}
+
 }
 
 TEST(BinaryParserTest, DecodesValidEmptyFile) {
@@ -148,6 +200,22 @@ TEST(BinaryParserTest, DecodesValidFileWithOneTick) {
     EXPECT_EQ(header.symbol_table_size, 6);
 
     EXPECT_EQ(file.size(), 78);
+}
+
+TEST(BinaryParserTest, DecodesValidFileWithFiftyTicks) {
+    auto file = makeBinaryFileWithFiftyTicks();
+
+    BinaryHeader header{};
+    BinaryHeaderError error{};
+
+    ASSERT_TRUE(decodeBinaryHeader(file, header, error));
+
+    EXPECT_EQ(header.header_size, 308);
+    EXPECT_EQ(header.record_count, 2);
+    EXPECT_EQ(header.symbol_count, 50);
+    EXPECT_EQ(header.symbol_table_size, 260);
+
+    EXPECT_EQ(file.size(), 48 + 260 + 24 * 2);
 }
 
 TEST(BinaryParserTest, RejectsInsufficientData) {
@@ -371,4 +439,43 @@ TEST(BinaryParserTest, LeavesOutputUnchangedOnFailure) {
 
     EXPECT_EQ(file.size(), 77);
 }
+
+TEST(BinaryParserTest, DecodesSymbolTable) {
+    auto file = makeBinaryFileWithOneTick();
+
+    BinaryHeader header{};
+    BinaryHeaderError error{};
+
+    ASSERT_TRUE(decodeBinaryHeader(file, header, error));
+
+    EXPECT_EQ(header.symbol_count, 1);
+    EXPECT_EQ(header.symbol_table_size, 6);
+
+    std::vector<std::string_view> symbolTable(header.symbol_count);
+    ASSERT_TRUE(decodeSymbolTable(file, symbolTable, error));
+
+    EXPECT_EQ(symbolTable.size(), 1);
+    EXPECT_EQ(symbolTable[0], "INFY");
+}
+
+TEST(BinaryParserTest, DecodesSymbolTableWithFiftySymbols) {
+    auto file = makeBinaryFileWithFiftyTicks();
+
+    BinaryHeader header{};
+    BinaryHeaderError error{};
+
+    ASSERT_TRUE(decodeBinaryHeader(file, header, error));
+
+    EXPECT_EQ(header.symbol_count, 50);
+    EXPECT_EQ(header.symbol_table_size, 260);
+
+    std::vector<std::string_view> symbolTable(header.symbol_count);
+    ASSERT_TRUE(decodeSymbolTable(file, symbolTable, error));
+
+    EXPECT_EQ(symbolTable.size(), 50);
+    for (std::size_t i = 0; i < companyCodes.size(); ++i) {
+        EXPECT_EQ(symbolTable[i], companyCodes[i]);
+    }
+}
+
 } // namespace hft::data
