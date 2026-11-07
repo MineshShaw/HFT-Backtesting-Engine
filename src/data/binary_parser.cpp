@@ -90,7 +90,7 @@ bool decodeBinaryHeader(
     header.symbol_count = readU32LE(file, 32);
     header.symbol_table_size = readU32LE(file, 36);
     header.price_scale = readU32LE(file, 40);
-    header.reserved = readU32LE(file, 44);
+    header.quantity_scale = readU32LE(file, 44);
 
     if (header.symbol_table_size >
         UINT32_MAX - kBinaryFixedHeaderSize) {
@@ -127,8 +127,8 @@ bool decodeBinaryHeader(
         return false;
     }
 
-    if (header.reserved != 0) {
-        error = BinaryHeaderError::InvalidReservedField;
+    if (header.quantity_scale == 0) {
+        error = BinaryHeaderError::InvalidQuantityScale;
         return false;
     }
 

@@ -21,7 +21,7 @@ enum class BinaryHeaderError {
     InvalidRecordSize,      // 5
     UnsupportedFlags,       // 6
     InvalidPriceScale,      // 7
-    InvalidReservedField,   // 8
+    InvalidQuantityScale,   // 8
     InvalidSymbolTableSize, // 9
     FileSizeMismatch        // 10
 };
@@ -37,7 +37,7 @@ enum class BinaryHeaderError {
 //         case BinaryHeaderError::InvalidRecordSize:      return os << "InvalidRecordSize";
 //         case BinaryHeaderError::UnsupportedFlags:       return os << "UnsupportedFlags";
 //         case BinaryHeaderError::InvalidPriceScale:      return os << "InvalidPriceScale";
-//         case BinaryHeaderError::InvalidReservedField:   return os << "InvalidReservedField";
+//         case BinaryHeaderError::InvalidQuantityScale:   return os << "InvalidQuantityScale";
 //         case BinaryHeaderError::InvalidSymbolTableSize: return os << "InvalidSymbolTableSize";
 //         case BinaryHeaderError::FileSizeMismatch:       return os << "FileSizeMismatch";
 //         default: return os << "Unknown Error (" << static_cast<int>(error) << ")";

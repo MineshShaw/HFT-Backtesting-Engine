@@ -78,7 +78,7 @@ std::vector<std::byte> makeEmptyBinaryFile() {
     writeU32LE(file, 36, 0);
 
     writeU32LE(file, 40, 10000);
-    writeU32LE(file, 44, 0);
+    writeU32LE(file, 44, 1);
 
     return file;
 }
@@ -107,7 +107,7 @@ std::vector<std::byte> makeBinaryFileWithOneTick() {
     writeU32LE(file, 36, 6);
 
     writeU32LE(file, 40, 10000);
-    writeU32LE(file, 44, 0);
+    writeU32LE(file, 44, 1);
 
     // Symbol table begins at offset 48.
     writeU16LE(file, 48, 4);
@@ -144,7 +144,7 @@ std::vector<std::byte> makeBinaryFileWithFiftyTicks() {
     writeU32LE(file, 36, symbolTableSize);
 
     writeU32LE(file, 40, 10000);
-    writeU32LE(file, 44, 0);
+    writeU32LE(file, 44, 1);
 
     std::size_t offset = 48;
 
@@ -348,17 +348,17 @@ TEST(BinaryParserTest, RejectsInvalidPriceScale) {
     EXPECT_EQ(error, BinaryHeaderError::InvalidPriceScale);
 }
 
-TEST(BinaryParserTest, RejectsInvalidReservedField) {
+TEST(BinaryParserTest, RejectsInvalidQuantityScale) {
     auto file = makeEmptyBinaryFile();
 
-    writeU32LE(file, 44, 1);
+    writeU32LE(file, 44, 0);
 
     BinaryHeader header{};
     BinaryHeaderError error{};
 
     EXPECT_FALSE(decodeBinaryHeader(file, header, error));
 
-    EXPECT_EQ(error, BinaryHeaderError::InvalidReservedField);
+    EXPECT_EQ(error, BinaryHeaderError::InvalidQuantityScale);
 }
 
 TEST(BinaryParserTest, RejectsInvalidSymbolTableSize) {
@@ -417,7 +417,7 @@ TEST(BinaryParserTest, LeavesOutputUnchangedOnFailure) {
     EXPECT_EQ(header.symbol_count, 1);
     EXPECT_EQ(header.symbol_table_size, 6);
     EXPECT_EQ(header.price_scale, 10000);
-    EXPECT_EQ(header.reserved, 0);
+    EXPECT_EQ(header.quantity_scale, 1);
 
     EXPECT_EQ(file.size(), 78);
 
@@ -435,7 +435,7 @@ TEST(BinaryParserTest, LeavesOutputUnchangedOnFailure) {
     EXPECT_EQ(header.symbol_count, 1);
     EXPECT_EQ(header.symbol_table_size, 6);
     EXPECT_EQ(header.price_scale, 10000);
-    EXPECT_EQ(header.reserved, 0);
+    EXPECT_EQ(header.quantity_scale, 1);
 
     EXPECT_EQ(file.size(), 77);
 }

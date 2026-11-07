@@ -28,7 +28,7 @@ struct BinaryHeader {
     std::uint32_t symbol_table_size{};
 
     std::uint32_t price_scale{};
-    std::uint32_t reserved{};
+    std::uint32_t quantity_scale{};
 };
 
 } // namespace hft::data
