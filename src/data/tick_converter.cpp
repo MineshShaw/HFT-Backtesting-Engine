@@ -5,15 +5,15 @@ namespace hft::data {
 
 bool convert_tick(const TickView& input, Tick& output) {
     Tick temp_tick;
-    if (!parse_integer(input.timestamp, temp_tick.timestamp)) {
+    if (!parse_integer(input.mTimestamp, temp_tick.timestamp)) {
         return false;
     }
-    temp_tick.symbol = input.symbol;
+    temp_tick.symbol = input.mSymbol;
 
-    if (!parse_double(input.price, temp_tick.price)) {
+    if (!parse_double(input.mPrice, temp_tick.price)) {
         return false;
     }
-    if (!parse_double(input.size, temp_tick.size)) {
+    if (!parse_double(input.mSize, temp_tick.size)) {
         return false;
     }
     
