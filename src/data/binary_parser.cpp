@@ -161,4 +161,54 @@ bool decodeBinaryHeader(
     return true;
 }
 
+bool decodeSymbolTable(
+    std::span<const std::byte> file,
+    std::vector<std::string_view>& output,
+    BinaryHeaderError& error
+) noexcept {
+    error = BinaryHeaderError::None;
+
+    if (file.size() < kBinaryFixedHeaderSize) {
+        error = BinaryHeaderError::InsufficientData;
+        return false;
+    }
+
+    const std::uint32_t symbolTableSize = readU32LE(file, 36);
+    const std::uint32_t symbolCount = readU32LE(file, 32);
+
+    if (file.size() < kBinaryFixedHeaderSize + symbolTableSize) {
+        error = BinaryHeaderError::InsufficientData;
+        return false;
+    }
+
+    std::size_t offset = kBinaryFixedHeaderSize;
+
+    for (std::size_t i = 0; i < symbolCount; ++i) {
+        if (offset + 2 > file.size()) {
+            error = BinaryHeaderError::InsufficientData;
+            return false;
+        }
+
+        const std::uint16_t symbolLength = readU16LE(file, offset);
+        offset += 2;
+
+        if (offset + symbolLength > file.size()) {
+            error = BinaryHeaderError::InsufficientData;
+            return false;
+        }
+
+        std::string_view entry;
+        entry = std::string_view(
+            reinterpret_cast<const char*>(file.data() + offset),
+            symbolLength
+        );
+
+        output[i] = entry;
+
+        offset += symbolLength;
+    }
+
+    return true;
+}
+
 } // namespace hft::data

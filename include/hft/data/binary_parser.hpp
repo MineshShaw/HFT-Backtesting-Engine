@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <span>
+#include <vector>
+#include <string_view>
 
 #include "hft/data/binary_format.hpp"
 
@@ -25,6 +27,13 @@ enum class BinaryHeaderError {
 bool decodeBinaryHeader(
     std::span<const std::byte> file,
     BinaryHeader& output,
+    BinaryHeaderError& error
+) noexcept;
+
+[[nodiscard]]
+bool decodeSymbolTable(
+    std::span<const std::byte> file,
+    std::vector<std::string_view>& output,
     BinaryHeaderError& error
 ) noexcept;
 
