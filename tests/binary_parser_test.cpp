@@ -10,6 +10,7 @@
 #include <span>
 #include <string>
 
+
 namespace hft::data {
 
 namespace {
@@ -163,6 +164,46 @@ std::vector<std::byte> makeBinaryFileWithFiftyTicks() {
 
 }
 
+std::vector<std::byte> makeBinaryRecord(
+    std::int64_t timestamp,
+    std::int64_t price,
+    std::uint16_t symbol_id,
+    std::uint16_t reserved,
+    std::uint32_t quantity
+) {
+    std::vector<std::byte> record(kBinaryRecordSize);
+
+    writeU64LE(record, 0, static_cast<std::uint64_t>(timestamp));
+    writeU64LE(record, 8, static_cast<std::uint64_t>(price));
+    writeU16LE(record, 16, symbol_id);
+    writeU16LE(record, 18, reserved);
+    writeU32LE(record, 20, quantity);
+
+    return record;
+}
+
+std::vector<std::byte> makeBinaryFileWithFiftyTicksAndHundredRecords() {
+    std::vector<std::byte> file = makeBinaryFileWithFiftyTicks();
+
+    writeU64LE(file, 24, 100);
+
+    file.resize(48 + 260);
+
+    for (std::size_t i = 0; i < 100; ++i) {
+        auto record = makeBinaryRecord(
+            1620000000000 + i * 1000,
+            100000 + i,
+            static_cast<std::uint16_t>(i % 50),
+            0,
+            100 + i
+        );
+        
+        file.insert(file.end(), record.begin(), record.end());
+    }
+
+    return file;
+}
+
 }
 
 TEST(BinaryParserTest, DecodesValidEmptyFile) {
@@ -309,7 +350,7 @@ TEST(BinaryParserTest, RejectsInvalidHeaderSize) {
     EXPECT_EQ(error, BinaryHeaderError::InvalidHeaderSize);
 }
 
-TEST(BinaryParserTest, RejectsInvalidRecordSize) {
+TEST(BinaryParserTest, RejectsInvalidRecordSizeInHeader) {
     auto file = makeEmptyBinaryFile();
 
     writeU32LE(file, 16, 100);
@@ -476,6 +517,240 @@ TEST(BinaryParserTest, DecodesSymbolTableWithFiftySymbols) {
     for (std::size_t i = 0; i < companyCodes.size(); ++i) {
         EXPECT_EQ(symbolTable[i], companyCodes[i]);
     }
+}
+
+TEST(BinaryParserTest, DecodesValidRecord) {
+    auto file = makeBinaryFileWithFiftyTicksAndHundredRecords();
+
+    BinaryHeader header{};
+    BinaryHeaderError error{};
+
+    ASSERT_TRUE(decodeBinaryHeader(file, header, error));
+
+    EXPECT_EQ(header.record_count, 100);
+    EXPECT_EQ(header.symbol_count, 50);
+
+    std::vector<std::string_view> symbolTable(header.symbol_count);
+    ASSERT_TRUE(decodeSymbolTable(file, symbolTable, error));
+
+    for (std::size_t i = 0; i < header.record_count; ++i) {
+        const std::size_t recordOffset =
+            header.header_size + i * header.record_size;
+
+        std::span<const std::byte> recordSpan(
+            file.data() + recordOffset,
+            header.record_size
+        );
+
+        BinaryRecord record{};
+        BinaryRecordError recordError{};
+
+        ASSERT_TRUE(decodeBinaryRecord(recordSpan, header, record, recordError));
+
+        EXPECT_EQ(record.timestamp, 1620000000000 + i * 1000);
+        EXPECT_EQ(record.price, 100000 + i);
+        EXPECT_EQ(record.symbol_id, static_cast<std::uint16_t>(i % 50));
+        EXPECT_EQ(record.reserved, 0);
+        EXPECT_EQ(record.quantity, 100 + i);
+    }
+}
+
+TEST(BinaryParserTest, NegativeTimestampDecodesCorrectly) {
+    auto record = makeBinaryRecord(
+        -1620000000000,
+        100000,
+        0,
+        0,
+        100
+    );
+
+    BinaryHeader header{};
+    header.symbol_count = 1;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    ASSERT_TRUE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(output.timestamp, -1620000000000);
+    EXPECT_EQ(output.price, 100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+}
+
+TEST(BinaryParserTest, NegativePriceDecodesCorrectly) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        -100000,
+        0,
+        0,
+        100
+    );
+
+    BinaryHeader header{};
+    header.symbol_count = 1;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    ASSERT_TRUE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(output.timestamp, 1620000000000);
+    EXPECT_EQ(output.price, -100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+}
+
+TEST(BinaryParserTest, MaximumValidSymbolIdIsAccepted) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        49,
+        0,
+        100
+    );
+
+    BinaryHeader header{};
+    header.symbol_count = 50;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    ASSERT_TRUE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(output.timestamp, 1620000000000);
+    EXPECT_EQ(output.price, 100000);
+    EXPECT_EQ(output.symbol_id, 49);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+}
+
+TEST(BinaryParserTest, RejectsInvalidSymbolId) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        1,
+        0,
+        100
+    );
+
+    BinaryHeader header{};
+    header.symbol_count = 1;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(error, BinaryRecordError::InvalidSymbolId);
+}
+
+TEST(BinaryParserTest, RejectsNonZeroReservedField) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        0,
+        1,
+        100
+    );
+
+    BinaryHeader header{};
+    header.symbol_count = 1;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(error, BinaryRecordError::InvalidReservedField);
+}
+
+TEST(BinaryParserTest, RejectsInvalidRecordSize) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        0,
+        0,
+        100
+    );
+
+    record.resize(23);
+
+    BinaryHeader header{};
+    header.symbol_count = 1;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(error, BinaryRecordError::InvalidRecordSize);
+
+    record.resize(25);
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(error, BinaryRecordError::InvalidRecordSize);
+}
+
+TEST(BinaryParserTest, OutputRemainsUnchangedAfterFailure) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        0,
+        0,
+        100
+    );
+    
+    BinaryHeader header{};
+    header.symbol_count = 1;
+    BinaryRecordError error{};
+    
+    BinaryRecord output{};
+    
+    ASSERT_TRUE(decodeBinaryRecord(record, header, output, error));
+    
+    record.resize(23);
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(output.timestamp, 1620000000000);
+    EXPECT_EQ(output.price, 100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+}
+
+TEST(BinaryParserTest, ErrorIsResetToNoneOnSuccessfulDecoding) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        0,
+        0,
+        100
+    );
+    
+    BinaryHeader header{};
+    header.symbol_count = 1;
+    BinaryRecordError error{};
+    
+    BinaryRecord output{};
+    
+    ASSERT_TRUE(decodeBinaryRecord(record, header, output, error));
+    
+    record.resize(23);
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(error, BinaryRecordError::InvalidRecordSize);
+
+    record.resize(24);
+
+    EXPECT_TRUE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(error, BinaryRecordError::None);
 }
 
 } // namespace hft::data
