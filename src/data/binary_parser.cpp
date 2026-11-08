@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <limits>
+#include <bit>
 
 namespace hft::data {
 
