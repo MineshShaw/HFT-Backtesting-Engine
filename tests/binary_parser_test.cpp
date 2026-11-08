@@ -555,7 +555,7 @@ TEST(BinaryParserTest, DecodesValidRecord) {
     }
 }
 
-TEST(BinaryParserTest, NegativeTimestampDecodesCorrectly) {
+TEST(BinaryParserTest, ExtremeTimestampDecodesCorrectly) {
     auto record = makeBinaryRecord(
         -1620000000000,
         100000,
@@ -577,9 +577,57 @@ TEST(BinaryParserTest, NegativeTimestampDecodesCorrectly) {
     EXPECT_EQ(output.symbol_id, 0);
     EXPECT_EQ(output.reserved, 0);
     EXPECT_EQ(output.quantity, 100);
+
+    auto record2 = makeBinaryRecord(
+        INT64_MIN,
+        100000,
+        0,
+        0,
+        100
+    );
+
+    ASSERT_TRUE(decodeBinaryRecord(record2, header, output, error));
+
+    EXPECT_EQ(output.timestamp, INT64_MIN);
+    EXPECT_EQ(output.price, 100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+
+    auto record3 = makeBinaryRecord(
+        INT64_MAX,
+        100000,
+        0,
+        0,
+        100
+    );
+
+    ASSERT_TRUE(decodeBinaryRecord(record3, header, output, error));
+
+    EXPECT_EQ(output.timestamp, INT64_MAX);
+    EXPECT_EQ(output.price, 100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+
+    auto record4 = makeBinaryRecord(
+        -1,
+        100000,
+        0,
+        0,
+        100
+    );
+
+    ASSERT_TRUE(decodeBinaryRecord(record4, header, output, error));
+
+    EXPECT_EQ(output.timestamp, -1);
+    EXPECT_EQ(output.price, 100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
 }
 
-TEST(BinaryParserTest, NegativePriceDecodesCorrectly) {
+TEST(BinaryParserTest, ExtremePriceDecodesCorrectly) {
     auto record = makeBinaryRecord(
         1620000000000,
         -100000,
@@ -598,6 +646,54 @@ TEST(BinaryParserTest, NegativePriceDecodesCorrectly) {
 
     EXPECT_EQ(output.timestamp, 1620000000000);
     EXPECT_EQ(output.price, -100000);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+
+    auto record2 = makeBinaryRecord(
+        1620000000000,
+        INT64_MIN,
+        0,
+        0,
+        100
+    );
+
+    ASSERT_TRUE(decodeBinaryRecord(record2, header, output, error));
+
+    EXPECT_EQ(output.timestamp, 1620000000000);
+    EXPECT_EQ(output.price, INT64_MIN);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+
+    auto record3 = makeBinaryRecord(
+        1620000000000,
+        INT64_MAX,
+        0,
+        0,
+        100
+    );
+
+    ASSERT_TRUE(decodeBinaryRecord(record3, header, output, error));
+
+    EXPECT_EQ(output.timestamp, 1620000000000);
+    EXPECT_EQ(output.price, INT64_MAX);
+    EXPECT_EQ(output.symbol_id, 0);
+    EXPECT_EQ(output.reserved, 0);
+    EXPECT_EQ(output.quantity, 100);
+
+    auto record4 = makeBinaryRecord(
+        1620000000000,
+        -1,
+        0,
+        0,
+        100
+    );
+
+    ASSERT_TRUE(decodeBinaryRecord(record4, header, output, error));
+
+    EXPECT_EQ(output.timestamp, 1620000000000);
+    EXPECT_EQ(output.price, -1);
     EXPECT_EQ(output.symbol_id, 0);
     EXPECT_EQ(output.reserved, 0);
     EXPECT_EQ(output.quantity, 100);
@@ -716,6 +812,26 @@ TEST(BinaryParserTest, OutputRemainsUnchangedAfterFailure) {
 
     EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
 
+    record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        0,
+        1,
+        100
+    );
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
+    record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        1,
+        0,
+        100
+    );
+
+    EXPECT_FALSE(decodeBinaryRecord(record, header, output, error));
+
     EXPECT_EQ(output.timestamp, 1620000000000);
     EXPECT_EQ(output.price, 100000);
     EXPECT_EQ(output.symbol_id, 0);
@@ -751,6 +867,26 @@ TEST(BinaryParserTest, ErrorIsResetToNoneOnSuccessfulDecoding) {
     EXPECT_TRUE(decodeBinaryRecord(record, header, output, error));
 
     EXPECT_EQ(error, BinaryRecordError::None);
+}
+
+TEST(BinaryParserTest, MaximumUint16SymbolIdIsAccepted) {
+    auto record = makeBinaryRecord(
+        1620000000000,
+        100000,
+        UINT16_MAX,
+        0,
+        100
+    );
+
+    BinaryHeader header{};
+    header.symbol_count = 65536;
+
+    BinaryRecord output{};
+    BinaryRecordError error{};
+
+    ASSERT_TRUE(decodeBinaryRecord(record, header, output, error));
+
+    EXPECT_EQ(output.symbol_id, UINT16_MAX);
 }
 
 } // namespace hft::data
