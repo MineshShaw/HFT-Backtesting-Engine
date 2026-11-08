@@ -44,11 +44,23 @@ enum class BinaryHeaderError {
 //     }
 // }
 
-enum class BinaryTickError {
+enum class BinaryRecordError {
     None,                   // 0
-    InsufficientData,       // 1
-    InvalidSymbolId         // 2
+    InvalidRecordSize,      // 1
+    InvalidSymbolId,        // 2
+    InvalidReservedField    // 3
 };
+
+// Uncomment to debug error messages in the binary parser.
+// inline std::ostream& operator<<(std::ostream& os, BinaryRecordError error) {
+//     switch (error) {
+//         case BinaryRecordError::None:                return os << "None";
+//         case BinaryRecordError::InvalidRecordSize:   return os << "InvalidRecordSize";
+//         case BinaryRecordError::InvalidSymbolId:     return os << "InvalidSymbolId";
+//         case BinaryRecordError::InvalidReservedField: return os << "InvalidReservedField";
+//         default  : return os << "Unknown Error (" << static_cast<int>(error) << ")";
+//     }
+// }
 
 [[nodiscard]]
 bool decodeBinaryHeader(
@@ -67,8 +79,10 @@ bool decodeSymbolTable(
 
 [[nodiscard]]
 bool decodeBinaryRecord(
-    std::span<const std::byte> file,
-    std::size_t offset,
-    BinaryRecord& output
+    std::span<const std::byte> record,
+    const BinaryHeader& header,
+    BinaryRecord& output,
+    BinaryRecordError& error
 ) noexcept;
+
 } // namespace hft::data

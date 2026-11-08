@@ -211,4 +211,40 @@ bool decodeSymbolTable(
     return true;
 }
 
+bool decodeBinaryRecord(
+    std::span<const std::byte> record,
+    const BinaryHeader& header,
+    BinaryRecord& output,
+    BinaryRecordError& error
+) noexcept {
+    error = BinaryRecordError::None;
+
+    BinaryRecord tempRecord{};
+
+    if (record.size() != kBinaryRecordSize) {
+        error = BinaryRecordError::InvalidRecordSize;
+        return false;
+    }
+
+    tempRecord.timestamp = std::bit_cast<std::int64_t>(readU64LE(record, 0));
+    tempRecord.price = std::bit_cast<std::int64_t>(readU64LE(record, 8));
+    tempRecord.symbol_id = readU16LE(record, 16);
+    tempRecord.reserved = readU16LE(record, 18);
+    tempRecord.quantity = readU32LE(record, 20);
+
+    if (tempRecord.symbol_id >= header.symbol_count) {
+        error = BinaryRecordError::InvalidSymbolId;
+        return false;
+    }
+
+    if (tempRecord.reserved != 0) {
+        error = BinaryRecordError::InvalidReservedField;
+        return false;
+    }
+
+    output = tempRecord;
+
+    return true;
+}
+
 } // namespace hft::data

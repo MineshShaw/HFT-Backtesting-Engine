@@ -33,10 +33,10 @@ struct BinaryHeader {
 
 struct BinaryRecord {
     std::int64_t timestamp{};
-    std::uint32_t quantity{};
+    std::int64_t price{};
     std::uint16_t symbol_id{};
     std::uint16_t reserved{};
-    std::int64_t price{};
+    std::uint32_t quantity{};
 };
 
 } // namespace hft::data
