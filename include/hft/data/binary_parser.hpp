@@ -44,6 +44,12 @@ enum class BinaryHeaderError {
 //     }
 // }
 
+enum class BinaryTickError {
+    None,                   // 0
+    InsufficientData,       // 1
+    InvalidSymbolId         // 2
+};
+
 [[nodiscard]]
 bool decodeBinaryHeader(
     std::span<const std::byte> file,
@@ -58,4 +64,11 @@ bool decodeSymbolTable(
     BinaryHeaderError& error
 ) noexcept;
 
+
+[[nodiscard]]
+bool decodeBinaryRecord(
+    std::span<const std::byte> file,
+    std::size_t offset,
+    BinaryRecord& output
+) noexcept;
 } // namespace hft::data
