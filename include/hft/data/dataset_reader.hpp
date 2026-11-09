@@ -1,22 +1,13 @@
 #pragma once
 
-#include <cstddef>
 #include <string>
-#include <utility>
 
 #include "hft/data/tick.hpp"
 #include "hft/data/csv_parser.hpp"
 #include "hft/data/mapped_file.hpp"
+#include "hft/data/ingestion_stats.hpp"
 
 namespace hft::data {
-
-struct IngestionStats {
-    std::size_t lines_read{};
-    std::size_t csv_records_accepted{};
-    std::size_t csv_records_rejected{};
-    std::size_t ticks_emitted{};
-    std::size_t tick_conversion_rejected{};
-};
 
 class DatasetReader {
 public:

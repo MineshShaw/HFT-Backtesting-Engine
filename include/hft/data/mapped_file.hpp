@@ -6,6 +6,15 @@
 namespace hft::data
 {
 
+enum class MappedFileError {
+    None,
+    OpenFailed,
+    StatFailed,
+    FileTooLarge,
+    MapFailed,
+    MovedFrom
+};
+
 class MappedFile {
 public:
     MappedFile(const std::string& file_path);
@@ -24,12 +33,17 @@ public:
 
     bool is_valid() const;
 
+    MappedFileError error() const;
+
 private:
+
     int mFileDescriptor;
 
     void* mMappedData;
 
     std::size_t mMappedSize;
+
+    MappedFileError mError;
 };
 
 }

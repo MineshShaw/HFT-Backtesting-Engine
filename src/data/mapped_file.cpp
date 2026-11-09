@@ -4,30 +4,35 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <limits>
 #include <cstdint>
+#include <limits>
 
 namespace hft::data
 {
 MappedFile::MappedFile(const std::string& file_path)
-    : mFileDescriptor(-1), mMappedData(nullptr), mMappedSize(0)
+    : mFileDescriptor(-1),
+      mMappedData(nullptr),
+      mMappedSize(0),
+      mError(MappedFileError::None)
 {
-    // Open the file
     mFileDescriptor = open(file_path.c_str(), O_RDONLY);
-    if (mFileDescriptor == -1)
+    if (mFileDescriptor == -1) {
+        mError = MappedFileError::OpenFailed;
         return;
+    }
 
-    // Get the file size
     struct stat sb;
     if (fstat(mFileDescriptor, &sb) == -1) {
         close(mFileDescriptor);
         mFileDescriptor = -1;
+        mError = MappedFileError::StatFailed;
         return;
     }
-    
+
     if (sb.st_size < 0) {
         close(mFileDescriptor);
         mFileDescriptor = -1;
+        mError = MappedFileError::StatFailed;
         return;
     }
 
@@ -35,33 +40,37 @@ MappedFile::MappedFile(const std::string& file_path)
         std::numeric_limits<std::size_t>::max()) {
         close(mFileDescriptor);
         mFileDescriptor = -1;
+        mError = MappedFileError::FileTooLarge;
         return;
     }
 
     mMappedSize = static_cast<std::size_t>(sb.st_size);
 
     if (mMappedSize == 0) {
-        mMappedData = nullptr;
         return;
     }
 
-    // Map the file into memory
     mMappedData = mmap(nullptr, mMappedSize, PROT_READ, MAP_PRIVATE, mFileDescriptor, 0);
     if (mMappedData == MAP_FAILED) {
         close(mFileDescriptor);
         mFileDescriptor = -1;
         mMappedData = nullptr;
         mMappedSize = 0;
+        mError = MappedFileError::MapFailed;
         return;
     }
 }
 
 MappedFile::MappedFile(MappedFile&& other) noexcept
-    : mFileDescriptor(other.mFileDescriptor), mMappedData(other.mMappedData), mMappedSize(other.mMappedSize)
+    : mFileDescriptor(other.mFileDescriptor),
+      mMappedData(other.mMappedData),
+      mMappedSize(other.mMappedSize),
+      mError(other.mError)
 {
     other.mFileDescriptor = -1;
     other.mMappedData = nullptr;
     other.mMappedSize = 0;
+    other.mError = MappedFileError::MovedFrom;
 }
 
 MappedFile::~MappedFile()
@@ -87,10 +96,12 @@ MappedFile& MappedFile::operator=(MappedFile&& other) noexcept
         mFileDescriptor = other.mFileDescriptor;
         mMappedData = other.mMappedData;
         mMappedSize = other.mMappedSize;
+        mError = other.mError;
 
         other.mFileDescriptor = -1;
         other.mMappedData = nullptr;
         other.mMappedSize = 0;
+        other.mError = MappedFileError::MovedFrom;
     }
     return *this;
 }
@@ -108,5 +119,10 @@ std::size_t MappedFile::size() const
 bool MappedFile::is_valid() const
 {
     return mFileDescriptor != -1;
+}
+
+MappedFileError MappedFile::error() const
+{
+    return mError;
 }
 } // namespace hft::data

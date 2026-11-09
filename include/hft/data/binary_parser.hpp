@@ -23,7 +23,8 @@ enum class BinaryHeaderError {
     InvalidPriceScale,      // 7
     InvalidQuantityScale,   // 8
     InvalidSymbolTableSize, // 9
-    FileSizeMismatch        // 10
+    FileSizeMismatch,       // 10
+    InvalidSymbolCount       // 11
 };
 
 // Uncomment to debug error messages in the binary parser.
@@ -74,7 +75,7 @@ bool decodeSymbolTable(
     std::span<const std::byte> file,
     std::vector<std::string_view>& output,
     BinaryHeaderError& error
-) noexcept;
+);
 
 
 [[nodiscard]]

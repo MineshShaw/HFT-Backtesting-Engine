@@ -2,8 +2,8 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <limits>
 #include <bit>
+#include <limits>
 
 namespace hft::data {
 
@@ -93,8 +93,13 @@ bool decodeBinaryHeader(
     header.price_scale = readU32LE(file, 40);
     header.quantity_scale = readU32LE(file, 44);
 
+    if (header.symbol_count > std::numeric_limits<std::uint16_t>::max() + 1U) {
+        error = BinaryHeaderError::InvalidSymbolCount;
+        return false;
+    }
+
     if (header.symbol_table_size >
-        UINT32_MAX - kBinaryFixedHeaderSize) {
+        std::numeric_limits<std::uint32_t>::max() - kBinaryFixedHeaderSize) {
         error = BinaryHeaderError::InvalidHeaderSize;
         return false;
     }
@@ -165,27 +170,30 @@ bool decodeBinaryHeader(
 bool decodeSymbolTable(
     std::span<const std::byte> file,
     std::vector<std::string_view>& output,
-    BinaryHeaderError& error
-) noexcept {
-    error = BinaryHeaderError::None;
-
-    if (file.size() < kBinaryFixedHeaderSize) {
-        error = BinaryHeaderError::InsufficientData;
+    BinaryHeaderError& error)
+{
+    BinaryHeader header{};
+    if (!decodeBinaryHeader(file, header, error)) {
         return false;
     }
 
-    const std::uint32_t symbolTableSize = readU32LE(file, 36);
-    const std::uint32_t symbolCount = readU32LE(file, 32);
-
-    if (file.size() < kBinaryFixedHeaderSize + symbolTableSize) {
-        error = BinaryHeaderError::InsufficientData;
+    const std::size_t symbolTableStart = kBinaryFixedHeaderSize;
+    const std::size_t symbolTableSize =
+        static_cast<std::size_t>(header.symbol_table_size);
+    if (symbolTableSize > std::numeric_limits<std::size_t>::max() -
+                              symbolTableStart) {
+        error = BinaryHeaderError::InvalidHeaderSize;
         return false;
     }
 
-    std::size_t offset = kBinaryFixedHeaderSize;
+    const std::size_t symbolTableEnd = symbolTableStart + symbolTableSize;
 
-    for (std::size_t i = 0; i < symbolCount; ++i) {
-        if (offset + 2 > file.size()) {
+    std::vector<std::string_view> decoded;
+    decoded.reserve(header.symbol_count);
+    std::size_t offset = symbolTableStart;
+
+    for (std::size_t i = 0; i < header.symbol_count; ++i) {
+        if (symbolTableEnd - offset < sizeof(std::uint16_t)) {
             error = BinaryHeaderError::InsufficientData;
             return false;
         }
@@ -193,22 +201,25 @@ bool decodeSymbolTable(
         const std::uint16_t symbolLength = readU16LE(file, offset);
         offset += 2;
 
-        if (offset + symbolLength > file.size()) {
+        if (symbolTableEnd - offset < symbolLength) {
             error = BinaryHeaderError::InsufficientData;
             return false;
         }
 
-        std::string_view entry;
-        entry = std::string_view(
+        decoded.emplace_back(
             reinterpret_cast<const char*>(file.data() + offset),
             symbolLength
         );
 
-        output[i] = entry;
-
         offset += symbolLength;
     }
 
+    if (offset != symbolTableEnd) {
+        error = BinaryHeaderError::InvalidSymbolTableSize;
+        return false;
+    }
+
+    output.swap(decoded);
     return true;
 }
 

@@ -415,6 +415,18 @@ TEST(BinaryParserTest, RejectsInvalidSymbolTableSize) {
     EXPECT_EQ(error, BinaryHeaderError::InvalidSymbolTableSize);
 }
 
+TEST(BinaryParserTest, RejectsTooManySymbols) {
+    auto file = makeEmptyBinaryFile();
+
+    writeU32LE(file, 32, 65537);
+
+    BinaryHeader header{};
+    BinaryHeaderError error{};
+
+    EXPECT_FALSE(decodeBinaryHeader(file, header, error));
+    EXPECT_EQ(error, BinaryHeaderError::InvalidSymbolCount);
+}
+
 TEST(BinaryParserTest, RejectRecordOverflow) {
     auto file = makeEmptyBinaryFile();
 
@@ -497,6 +509,52 @@ TEST(BinaryParserTest, DecodesSymbolTable) {
 
     EXPECT_EQ(symbolTable.size(), 1);
     EXPECT_EQ(symbolTable[0], "INFY");
+}
+
+TEST(BinaryParserTest, ResizesSymbolTableOutputAtomically) {
+    auto file = makeBinaryFileWithOneTick();
+
+    BinaryHeaderError error{};
+    std::vector<std::string_view> symbolTable;
+
+    ASSERT_TRUE(decodeSymbolTable(file, symbolTable, error));
+    ASSERT_EQ(symbolTable.size(), 1);
+    EXPECT_EQ(symbolTable[0], "INFY");
+}
+
+TEST(BinaryParserTest, PreservesSymbolTableOutputOnFailure) {
+    auto file = makeBinaryFileWithOneTick();
+    writeU16LE(file, 48, 5);
+
+    BinaryHeaderError error{};
+    std::vector<std::string_view> symbolTable{"OLD"};
+
+    EXPECT_FALSE(decodeSymbolTable(file, symbolTable, error));
+    EXPECT_EQ(error, BinaryHeaderError::InsufficientData);
+    ASSERT_EQ(symbolTable.size(), 1);
+    EXPECT_EQ(symbolTable[0], "OLD");
+}
+
+TEST(BinaryParserTest, RejectsSymbolDataOutsideDeclaredTable) {
+    auto file = makeBinaryFileWithOneTick();
+    writeU16LE(file, 48, 5);
+
+    BinaryHeaderError error{};
+    std::vector<std::string_view> symbolTable;
+
+    EXPECT_FALSE(decodeSymbolTable(file, symbolTable, error));
+    EXPECT_EQ(error, BinaryHeaderError::InsufficientData);
+}
+
+TEST(BinaryParserTest, RejectsUnconsumedSymbolTableBytes) {
+    auto file = makeBinaryFileWithOneTick();
+    writeU16LE(file, 48, 3);
+
+    BinaryHeaderError error{};
+    std::vector<std::string_view> symbolTable;
+
+    EXPECT_FALSE(decodeSymbolTable(file, symbolTable, error));
+    EXPECT_EQ(error, BinaryHeaderError::InvalidSymbolTableSize);
 }
 
 TEST(BinaryParserTest, DecodesSymbolTableWithFiftySymbols) {

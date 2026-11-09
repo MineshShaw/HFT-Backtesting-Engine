@@ -64,6 +64,7 @@ TEST_F(MappedFileTest, OpensEmptyFile) {
 TEST_F(MappedFileTest, RejectsMissingFile) {
     hft::data::MappedFile file(missing_file.c_str());
     EXPECT_FALSE(file.is_valid());
+    EXPECT_EQ(file.error(), hft::data::MappedFileError::OpenFailed);
 }
 
 TEST_F(MappedFileTest, MoveConstructsCorrectly) {
@@ -73,7 +74,9 @@ TEST_F(MappedFileTest, MoveConstructsCorrectly) {
     hft::data::MappedFile moved(std::move(original));
     
     EXPECT_FALSE(original.is_valid());
+    EXPECT_EQ(original.error(), hft::data::MappedFileError::MovedFrom);
     EXPECT_TRUE(moved.is_valid());
+    EXPECT_EQ(moved.error(), hft::data::MappedFileError::None);
     EXPECT_EQ(moved.size(), sample_content.size());
 }
 
@@ -87,6 +90,8 @@ TEST_F(MappedFileTest, MoveAssignsCorrectly) {
     file2 = std::move(file1);
 
     EXPECT_FALSE(file1.is_valid());
+    EXPECT_EQ(file1.error(), hft::data::MappedFileError::MovedFrom);
     EXPECT_TRUE(file2.is_valid());
+    EXPECT_EQ(file2.error(), hft::data::MappedFileError::None);
     EXPECT_EQ(file2.size(), sample_content.size());
 }
