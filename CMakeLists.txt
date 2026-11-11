@@ -6,6 +6,8 @@ project(
     LANGUAGES CXX
 )
 
+find_package(Threads REQUIRED)
+
 # Enforce C++20.
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,10 +34,11 @@ add_library(hft_core
     src/data/binary_dataset_reader.cpp
     src/memory/fixed_block_pool.cpp
     src/concurrency/spsc_queue.cpp
+    src/platform/thread_affinity.cpp
 )
 # Using PUBLIC means anything that links hft_core automatically gets this include directory
 target_include_directories(hft_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(hft_core PRIVATE project_warnings)
+target_link_libraries(hft_core PRIVATE project_warnings Threads::Threads)
 
 
 # Create the main executable from src/main.cpp.
@@ -59,6 +62,7 @@ add_executable(binary_parser_test tests/binary_parser_test.cpp)
 add_executable(binary_dataset_reader_test tests/binary_dataset_reader_test.cpp)
 add_executable(memory_pool_test tests/memory_pool_test.cpp)
 add_executable(spsc_queue_test tests/spsc_queue_test.cpp)
+add_executable(thread_affinity_test tests/thread_affinity_test.cpp)
 
 target_link_libraries(smoke_test PRIVATE project_warnings)
 
@@ -141,6 +145,15 @@ target_link_libraries(spsc_queue_test
     project_warnings
 )
 
+target_link_libraries(thread_affinity_test
+    PRIVATE
+    hft_core
+    GTest::gtest
+    GTest::gtest_main
+    project_warnings
+    Threads::Threads
+)
+
 add_test(NAME SmokeTest COMMAND smoke_test)
 add_test(NAME MappedFileTest COMMAND mapped_file_test)
 add_test(NAME CsvParserTest COMMAND csv_parser_test)
@@ -151,3 +164,4 @@ add_test(NAME BinaryParserTest COMMAND binary_parser_test)
 add_test(NAME BinaryDatasetReaderTest COMMAND binary_dataset_reader_test)
 add_test(NAME MemoryPoolTest COMMAND memory_pool_test)
 add_test(NAME SPSCQueueTest COMMAND spsc_queue_test)
+add_test(NAME ThreadAffinityTest COMMAND thread_affinity_test)
