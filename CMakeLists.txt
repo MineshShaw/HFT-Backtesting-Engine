@@ -35,6 +35,8 @@ add_library(hft_core
     src/memory/fixed_block_pool.cpp
     src/concurrency/spsc_queue.cpp
     src/platform/thread_affinity.cpp
+    src/replay/data_source.cpp
+    src/replay/event_loop.cpp
 )
 # Using PUBLIC means anything that links hft_core automatically gets this include directory
 target_include_directories(hft_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -63,6 +65,7 @@ add_executable(binary_dataset_reader_test tests/binary_dataset_reader_test.cpp)
 add_executable(memory_pool_test tests/memory_pool_test.cpp)
 add_executable(spsc_queue_test tests/spsc_queue_test.cpp)
 add_executable(thread_affinity_test tests/thread_affinity_test.cpp)
+add_executable(replay_event_loop_test tests/replay_event_loop_test.cpp)
 
 target_link_libraries(smoke_test PRIVATE project_warnings)
 
@@ -154,6 +157,15 @@ target_link_libraries(thread_affinity_test
     Threads::Threads
 )
 
+target_link_libraries(replay_event_loop_test
+    PRIVATE
+    hft_core
+    GTest::gtest
+    GTest::gtest_main
+    project_warnings
+    Threads::Threads
+)
+
 add_test(NAME SmokeTest COMMAND smoke_test)
 add_test(NAME MappedFileTest COMMAND mapped_file_test)
 add_test(NAME CsvParserTest COMMAND csv_parser_test)
@@ -165,3 +177,4 @@ add_test(NAME BinaryDatasetReaderTest COMMAND binary_dataset_reader_test)
 add_test(NAME MemoryPoolTest COMMAND memory_pool_test)
 add_test(NAME SPSCQueueTest COMMAND spsc_queue_test)
 add_test(NAME ThreadAffinityTest COMMAND thread_affinity_test)
+add_test(NAME ReplayEventLoopTest COMMAND replay_event_loop_test)
