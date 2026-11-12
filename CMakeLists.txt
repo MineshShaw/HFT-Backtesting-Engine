@@ -66,6 +66,11 @@ add_executable(memory_pool_test tests/memory_pool_test.cpp)
 add_executable(spsc_queue_test tests/spsc_queue_test.cpp)
 add_executable(thread_affinity_test tests/thread_affinity_test.cpp)
 add_executable(replay_event_loop_test tests/replay_event_loop_test.cpp)
+add_executable(csv_parsing_benchmark benchmarks/csv_parsing_benchmark.cpp)
+add_executable(binary_decoding_benchmark benchmarks/binary_decoding_benchmark.cpp)
+add_executable(memory_pool_benchmark benchmarks/memory_pool_benchmark.cpp)
+add_executable(spsc_queue_benchmark benchmarks/spsc_queue_benchmark.cpp)
+add_executable(replay_benchmark benchmarks/replay_benchmark.cpp)
 
 target_link_libraries(smoke_test PRIVATE project_warnings)
 
@@ -165,6 +170,12 @@ target_link_libraries(replay_event_loop_test
     project_warnings
     Threads::Threads
 )
+
+target_link_libraries(csv_parsing_benchmark PRIVATE hft_core project_warnings)
+target_link_libraries(binary_decoding_benchmark PRIVATE hft_core project_warnings)
+target_link_libraries(memory_pool_benchmark PRIVATE hft_core project_warnings)
+target_link_libraries(spsc_queue_benchmark PRIVATE hft_core project_warnings)
+target_link_libraries(replay_benchmark PRIVATE hft_core project_warnings Threads::Threads)
 
 add_test(NAME SmokeTest COMMAND smoke_test)
 add_test(NAME MappedFileTest COMMAND mapped_file_test)

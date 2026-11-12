@@ -1,5 +1,5 @@
 /build/
-/build-clean/
+/build-*/
 /cmake-build-*/
 /CMakeUserPresets.json
 *.o

@@ -194,7 +194,7 @@ TEST_F(CsvFixture, PropagatesSourceInitializationFailure)
     );
 
     EXPECT_FALSE(loop.start());
-    EXPECT_EQ(loop.stats().source_errors, 0);
+    EXPECT_EQ(loop.stats().source_errors, 1);
     EXPECT_EQ(
         loop.stats().shutdown_reason,
         hft::replay::ShutdownReason::SourceError
@@ -284,7 +284,7 @@ TEST_F(CsvFixture, SupportsRequestedShutdown)
         loop.stats().shutdown_reason,
         hft::replay::ShutdownReason::Requested
     );
-    EXPECT_LE(loop.stats().events_consumed, loop.stats().events_produced);
+    EXPECT_EQ(loop.stats().events_consumed, loop.stats().events_produced);
 }
 
 } // namespace

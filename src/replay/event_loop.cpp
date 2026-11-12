@@ -39,7 +39,9 @@ bool EventLoop::start()
 
     if (!mSource.is_valid()) {
         set_error("Replay source initialization failed", ShutdownReason::SourceError);
+        mSourceErrors.fetch_add(1, std::memory_order_relaxed);
         mProducerDone.store(true, std::memory_order_release);
+        update_stats_snapshot();
         return false;
     }
 
@@ -70,6 +72,7 @@ void EventLoop::join()
     if (mConsumerThread.joinable()) {
         mConsumerThread.join();
     }
+    update_stats_snapshot();
 }
 
 const EventLoopStats& EventLoop::stats() const
@@ -80,6 +83,15 @@ const EventLoopStats& EventLoop::stats() const
 const std::optional<std::string>& EventLoop::error() const
 {
     return mError;
+}
+
+void EventLoop::update_stats_snapshot()
+{
+    std::scoped_lock lock(mStateMutex);
+    mStats.events_produced = mEventsProduced.load(std::memory_order_relaxed);
+    mStats.events_consumed = mEventsConsumed.load(std::memory_order_relaxed);
+    mStats.source_errors = mSourceErrors.load(std::memory_order_relaxed);
+    mStats.consumer_errors = mConsumerErrors.load(std::memory_order_relaxed);
 }
 
 void EventLoop::set_error(std::string message, ShutdownReason reason)
@@ -109,36 +121,39 @@ void EventLoop::producer_main()
             }
 
             if (status == ReadStatus::Error) {
-                {
-                    std::scoped_lock lock(mStateMutex);
-                    ++mStats.source_errors;
-                }
+                mSourceErrors.fetch_add(1, std::memory_order_relaxed);
                 set_error("Replay source returned an error", ShutdownReason::SourceError);
                 break;
             }
 
-            while (!mQueue->queue.try_push(std::move(tick))) {
+            bool enqueued = false;
+            while (!enqueued) {
+                enqueued = mQueue->queue.try_push(std::move(tick));
+                if (enqueued) {
+                    break;
+                }
                 if (mShutdownRequested.load(std::memory_order_acquire)) {
                     break;
                 }
                 std::this_thread::yield();
             }
 
-            if (mShutdownRequested.load(std::memory_order_acquire)) {
+            if (!enqueued) {
                 break;
             }
 
-            std::scoped_lock lock(mStateMutex);
-            ++mStats.events_produced;
+            mEventsProduced.fetch_add(1, std::memory_order_relaxed);
+
+            if (mShutdownRequested.load(std::memory_order_acquire)) {
+                break;
+            }
         }
     } catch (const std::exception& exception) {
         set_error(exception.what(), ShutdownReason::SourceError);
-        std::scoped_lock lock(mStateMutex);
-        ++mStats.source_errors;
+        mSourceErrors.fetch_add(1, std::memory_order_relaxed);
     } catch (...) {
         set_error("Unknown producer exception", ShutdownReason::SourceError);
-        std::scoped_lock lock(mStateMutex);
-        ++mStats.source_errors;
+        mSourceErrors.fetch_add(1, std::memory_order_relaxed);
     }
 
     mProducerDone.store(true, std::memory_order_release);
@@ -151,34 +166,25 @@ void EventLoop::consumer_main()
             data::Tick tick{};
             if (mQueue->queue.try_pop(tick)) {
                 mConsumer(tick);
-                std::scoped_lock lock(mStateMutex);
-                ++mStats.events_consumed;
+                mEventsConsumed.fetch_add(1, std::memory_order_relaxed);
                 continue;
             }
 
             const bool producer_done = mProducerDone.load(
                 std::memory_order_acquire
             );
-            if (producer_done || mShutdownRequested.load(
-                                    std::memory_order_acquire
-                                )) {
+            if (producer_done && mQueue->queue.empty()) {
                 break;
             }
 
             std::this_thread::yield();
         }
     } catch (const std::exception& exception) {
-        {
-            std::scoped_lock lock(mStateMutex);
-            ++mStats.consumer_errors;
-        }
+        mConsumerErrors.fetch_add(1, std::memory_order_relaxed);
         set_error(exception.what(), ShutdownReason::ConsumerError);
         mShutdownRequested.store(true, std::memory_order_release);
     } catch (...) {
-        {
-            std::scoped_lock lock(mStateMutex);
-            ++mStats.consumer_errors;
-        }
+        mConsumerErrors.fetch_add(1, std::memory_order_relaxed);
         set_error("Unknown consumer exception", ShutdownReason::ConsumerError);
         mShutdownRequested.store(true, std::memory_order_release);
     }

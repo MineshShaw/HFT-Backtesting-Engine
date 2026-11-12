@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <functional>
 #include <mutex>
@@ -51,6 +52,7 @@ private:
     void producer_main();
     void consumer_main();
     void set_error(std::string message, ShutdownReason reason);
+    void update_stats_snapshot();
 
     ReplaySource mSource;
     Consumer mConsumer;
@@ -60,6 +62,10 @@ private:
     std::thread mConsumerThread;
     std::atomic<bool> mShutdownRequested;
     std::atomic<bool> mProducerDone;
+    std::atomic<std::size_t> mEventsProduced{0};
+    std::atomic<std::size_t> mEventsConsumed{0};
+    std::atomic<std::size_t> mSourceErrors{0};
+    std::atomic<std::size_t> mConsumerErrors{0};
     EventLoopStats mStats{};
     std::optional<std::string> mError;
     mutable std::mutex mStateMutex;
